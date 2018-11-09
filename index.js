@@ -37,22 +37,12 @@ exports.webhook = functions.https.onRequest((request, response) => {
 
     // เริ่มการทำงาน intent dogSearch
     if (intent.displayName === 'dogSearch') {
-        var list = []; // สร้าง list เปล่า เพื่อใช้ในการแสดง carousel ของสิ่งที่ query มา
+         // สร้าง list เปล่า เพื่อใช้ในการแสดง carousel ของสิ่งที่ query มา
+         var list = [];
         // ชื่อใน collection จะต้องมีการเปลี่ยนในภายหลัง ไม่ fix ให้เป็น dog เลย
-        var dogsRef = db.collection('dogs').doc(params.Dogspecies);
+        
 
-        // get the data of Dogspecies document
-        dogsRef.get()
-            .then(doc => {
-                if (!doc.exists) {
-                    console.log('ไม่มีสุนัขพันธุ์นี้อยู่ในระบบครับ');
-                } else {
-                    console.log('Document data:', doc.data());
-                }
-            })
-            .catch(err => {
-                console.log('Error getting document', err);
-            });
+      
 
         // query ข้อมูลในชั้น subcollection เพื่อที่จะ list สุนัขทุกตัว ในสายพันธุ์ที่ลูกค้าต้องการ
         var reff = db.collection('dogs').doc(params.Dogspecies);
@@ -61,22 +51,22 @@ exports.webhook = functions.https.onRequest((request, response) => {
             .then(collections => {
                 collections.forEach(collection => {
 
-                    // print ว่าเป็นตัวสุนัขที่เท่าไหร่ ในสายพันธุ์นี้
-                    console.log('เจอสุนัข:', collection.id);
-
+                    // In ForEach loop
+                    
                     // retrieve ข้อมูลของสุนัขแต่ละตัว
                     collection.doc("profile").get()
                         .then(doc => {
                             if (!doc.exists) {
                                 console.log('ไม่มีสุนัขสักตัวในสายพันธุ์นี้เลย');
                             } else {
-                                var data = doc.data;
-                                console.log('ข้อมูลของสุนัขตัวที่',collection.id,'มีดังนี้:', doc.data());
+                                
+                                var dataofPet = doc.data();
+                                console.log('ข้อมูลของสุนัขตัวที่', collection.id, 'มีดังนี้:', doc.data());
                                 list.push(
                                     {
-                                        "thumbnailImageUrl": data.image,
-                                        "title": data.dogtype,
-                                        "text": data.info,
+                                        "thumbnailImageUrl": dataofPet.image,
+                                        "title": dataofPet.dogtype,
+                                        "text": dataofPet.info,
                                         "actions": [
                                             {
                                                 "type": "message",
@@ -97,34 +87,37 @@ exports.webhook = functions.https.onRequest((request, response) => {
                         .catch(err => {
                             console.log('Error1 getting document', err);
                         });
-                        console.log("Length:",list.length);
-                        console.log("list:",list);
-   
-                       
+                   
 
+
+                        console.log("Length:", list.length);
+                        console.log("list:", list);
                 });
-          
+
+                response.send({
+                    "fulfillmentMessages": [
+                        {
+                            "payload": {
+                                "line": {
+                                    "type": "template",
+                                    "altText": "dogSearch",
+                                    "template": {
+                                        "type": "carousel",
+                                        "columns": list
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                });
+                return;
+            
             })
             .catch(err => {
                 console.log('Error2 getting document', err);
             });
 
-            response.send({
-                "fulfillmentMessages": [
-                    {
-                        "payload": {
-                            "line": {
-                                "type": "template",
-                                "altText": "dogSearch",
-                                "template": {
-                                    "type": "carousel",
-                                    "columns": list
-                                }
-                            }
-                        }
-                    }
-                ]
-            });
+
         //จบการ query ทั้งหมด
 
 
@@ -142,4 +135,3 @@ exports.webhook = functions.https.onRequest((request, response) => {
     // let intentMap = new Map();
     // intentMap.set("dogSearch", specieSearch);
     // agent.handleRequest(intentMap);
-
