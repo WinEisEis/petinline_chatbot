@@ -1,35 +1,33 @@
+// */ This is the code for the intent "DOGSEARCH" \*
+
+// Latest update on 12 November 
 
 "use strict";
 
 const functions = require("firebase-functions");
 
-// เผื่อต้องใช้ในอนาคตเฉยๆ
-// const { WebhookClient } = require("dialogflow-fulfillment");
-// const { Card, Suggestion } = require("dialogflow-fulfillment");
-////
-
-// ทำการเชื่อมต่อกับ Firebase และ Cloud functions
+// ทำการเชื่อมต่อกับ Firebase และ Cloud functions ในฐานะ Admin
 var admin = require("firebase-admin");
 admin.initializeApp(functions.config().firebase);
 var db = admin.firestore();
 
-// code นี้ อาจต้องใช้ ถ้ามีการ warning เรื่อง Timestamp snapshot
-//db.firestore.settings({ timestampsInSnapshots: true });
+// code นี้ ใช้เพื่อป้องกัน warning จาก firebase 
+admin.firestore().settings({ timestampsInSnapshots: true });
 
-
-// code การทำงานของ function ใน firebase
+// WEBHOOK ACTIVATION
 exports.webhook = functions.https.onRequest((request, response) => {
-    //const agent = new WebhookClient({ request, response });
 
     //print ค่า parameters ที่ request ส่งมา
     console.log("request.body.queryResult.parameters: ", request.body.queryResult.parameters);
 
+    // Initiate variable
     let body = request.body;
     let params = request.body.queryResult.parameters;
     let intent = request.body.queryResult.intent;
 
     // print original payload เพื่อให้สามารถดู id ของ LINE user นั้นๆได้
     console.log(body.originalDetectIntentRequest.payload);
+
     // print intent's name, parameter's name
     console.log("This intent is ", intent.displayName);
     console.log("params is", params);
@@ -37,90 +35,84 @@ exports.webhook = functions.https.onRequest((request, response) => {
 
     // เริ่มการทำงาน intent dogSearch
     if (intent.displayName === 'dogSearch') {
-         // สร้าง list เปล่า เพื่อใช้ในการแสดง carousel ของสิ่งที่ query มา
-         var list = [];
-        // ชื่อใน collection จะต้องมีการเปลี่ยนในภายหลัง ไม่ fix ให้เป็น dog เลย
-        
 
-      
+        // สร้าง list เปล่า เพื่อใช้ในการแสดง carousel ของสิ่งที่ query มา
+        var list = [];
 
         // query ข้อมูลในชั้น subcollection เพื่อที่จะ list สุนัขทุกตัว ในสายพันธุ์ที่ลูกค้าต้องการ
-        var reff = db.collection('dogs').doc(params.Dogspecies);
+        var dogsRef = db.collection('dogs').doc(params.Dogspecies);
 
-        reff.getCollections()
+        dogsRef.getCollections()
             .then(collections => {
                 collections.forEach(collection => {
-
-                    // In ForEach loop
-                    
-                    // retrieve ข้อมูลของสุนัขแต่ละตัว
                     collection.doc("profile").get()
                         .then(doc => {
                             if (!doc.exists) {
                                 console.log('ไม่มีสุนัขสักตัวในสายพันธุ์นี้เลย');
                             } else {
-                                
                                 var dataofPet = doc.data();
                                 console.log('ข้อมูลของสุนัขตัวที่', collection.id, 'มีดังนี้:', doc.data());
+
+                                // ทำการใส่ข้อมูลของสุนัขแต่ละตัวใน db ลงใน list
                                 list.push(
                                     {
-                                        "thumbnailImageUrl": dataofPet.image,
-                                        "title": dataofPet.dogtype,
-                                        "text": dataofPet.info,
-                                        "actions": [
+                                        thumbnailImageUrl: dataofPet.image,
+                                        title: dataofPet.dogtype,
+                                        text: dataofPet.info,
+                                        actions: [
                                             {
-                                                "type": "message",
-                                                "label": "Detail",
-                                                "text": "Detail"
+                                                type: "message",
+                                                label: "Detail",
+
+                                                // จะมีการใส่ข้อมูลทีหลัง
+                                                text: "จะให้บอทตอบอะไร เดี๋ยวค่อยว่ากัน"
                                             },
                                             {
-                                                "type": "message",
-                                                "label": "Request",
-                                                "text": "Request"
+                                                type: "message",
+                                                label: "Request",
+                                                // จะมีการใส่ข้อมูลทีหลัง
+                                                text: "อันนี้จะเอายังไงดี"
                                             }
                                         ]
-
                                     }
                                 );
+
+                                console.log("Length:", list.length);
+                                console.log("list:", list);
+
+                                console.log(collections.length);
+                                if (list.length === collections.length) {
+                                    console.log("จำนวนสุนัขทั้งหมดมี =>", list)
+                                    response.send({
+                                        "fulfillmentMessages": [
+                                            {
+                                                "payload": {
+                                                    "line": {
+                                                        "type": "template",
+                                                        "altText": "dogSearch",
+                                                        "template": {
+                                                            "type": "carousel",
+                                                            "columns": list
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    });
+                                }
                             }
+                            return;
                         })
                         .catch(err => {
                             console.log('Error1 getting document', err);
                         });
-                   
 
-
-                        console.log("Length:", list.length);
-                        console.log("list:", list);
-                });
-
-                response.send({
-                    "fulfillmentMessages": [
-                        {
-                            "payload": {
-                                "line": {
-                                    "type": "template",
-                                    "altText": "dogSearch",
-                                    "template": {
-                                        "type": "carousel",
-                                        "columns": list
-                                    }
-                                }
-                            }
-                        }
-                    ]
                 });
                 return;
-            
             })
             .catch(err => {
                 console.log('Error2 getting document', err);
             });
-
-
-        //จบการ query ทั้งหมด
-
-
     }
 });
 
@@ -129,9 +121,3 @@ exports.webhook = functions.https.onRequest((request, response) => {
 
 
 
-
-    // จบ function
-
-    // let intentMap = new Map();
-    // intentMap.set("dogSearch", specieSearch);
-    // agent.handleRequest(intentMap);
