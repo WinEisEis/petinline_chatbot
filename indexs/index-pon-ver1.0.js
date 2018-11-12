@@ -61,7 +61,6 @@ exports.webhook = functions.https.onRequest((request, response) => {
                                 var dataofPet = doc.data();
                                 console.log('ข้อมูลของสุนัขตัวที่pon', collection.id, 'มีดังนี้:', doc.data());
                                 console.log('dog type :',dataofPet.dogtype);
-
                                 list.push(
                                   {
                                       thumbnailImageUrl: dataofPet.image,
@@ -119,22 +118,22 @@ exports.webhook = functions.https.onRequest((request, response) => {
                 console.log('Error2 getting document', err);
             });
 
-
         //จบการ query ทั้งหมด
 
     }
     else if (intent.displayName === 'petType'){
-      listofPet = []
-      console.log("The params.PetTypes is :",params.Pettype);
-      var petreff = db.collection(params.Pettype);
+      listofPet = [];
+      console.log("The params.PetTypes is :",params.Pettypes);
+      var petreff = db.collection(params.Pettypes);
       var showReff = petreff.get().then(snapshot => {
         snapshot.forEach(doc => {
           console.log("In petType:",doc.id, '=>', doc.data());
+          var docQuery = doc.data();
           listofPet.push(
             {
                 thumbnailImageUrl: "https://firebasestorage.googleapis.com/v0/b/petinline-64d57.appspot.com/o/labrador.jpg?alt=media&token=d178eddf-5ded-4619-848c-519bb40362e4",
-                title: params.Pettype,
-                text: doc.id,
+                title: doc.id,
+                text: "docQuery.description",
                 actions: [
                     {
                         type: "message",
@@ -145,31 +144,27 @@ exports.webhook = functions.https.onRequest((request, response) => {
 
             }
            );
-           console.log("petreff.length:",petreff.length);
-           console.log("listofPet.length:",listofPet.length);
-           if(petreff.length === listofPet.length){
-            console.log("List out of then:",listofPet);
-            response.send({
-             "fulfillmentMessages": [
-                 {
-                   "payload": {
-                     "line": {
-                         "type": "template",
-                         "altText": "this is a carousel template",
-                         "template": {
-                           "type": "carousel",
-                           "actions": [],
-                           "columns": list
-                           }
-                         }
-                   }
-                 }
-             ],
-           });
-           return;
-            }
+          
 
         });
+        console.log("ListofPet is :",listofPet);
+        response.send({
+            "fulfillmentMessages": [
+                {
+                  "payload": {
+                    "line": {
+                        "type": "template",
+                        "altText": "this is a carousel template",
+                        "template": {
+                          "type": "carousel",
+                          "actions": [],
+                          "columns": listofPet
+                          }
+                        }
+                  }
+                }
+            ],
+          });
         return;
       }).catch(err => {
         console.log('Error in petType getting documents', err);
