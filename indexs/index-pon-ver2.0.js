@@ -172,11 +172,11 @@ exports.webhook = functions.https.onRequest((request, response) => {
       });
     return;
     }
-    else if (intent.displayName === 'accessoryLIist'){
+    else if (intent.displayName === 'accessoryList'){
         listofAccessory = [];
         var count = 0;
         var listcount = 0;
-        console.log("The params accessoryLIist is :",params.Pettypes);
+        console.log("The params accessoryList is :",params.Pettypes);
         
         var accreff = db.collection('accessory').doc(params.Accessorytypes);
 
@@ -203,25 +203,16 @@ exports.webhook = functions.https.onRequest((request, response) => {
                                             type: "bubble",
                                             hero: {
                                                 type: "image",
-                                                url: "https://www.picz.in.th/images/2018/11/05/3TsH61.png",
+                                                url: accessoryofPet.image,
                                                 size: "full",
                                                 aspectRatio: "20:13",
                                                 aspectMode: "fit",
-                                                action: {
-                                                type: "uri",
-                                                label: "Action",
-                                                uri: "https://linecorp.com"
-                                                }
                                             },
                                             body: {
                                                 type: "box",
                                                 layout: "vertical",
                                                 spacing: "md",
-                                                action: {
-                                                type: "uri",
-                                                label: "Action",
-                                                uri: "https://linecorp.com"
-                                                },
+
                                                 contents: [
                                                 {
                                                     type: "text",
@@ -244,14 +235,14 @@ exports.webhook = functions.https.onRequest((request, response) => {
                                                         },
                                                         {
                                                             type: "text",
-                                                            text: "$10.5",
+                                                            text: `$${accessoryofPet.price}`,
                                                             flex: 0,
                                                             margin: "sm",
                                                             weight: "bold"
                                                         },
                                                         {
                                                             type: "text",
-                                                            text: "400kcl",
+                                                            text: `${accessoryofPet.weight}g`,
                                                             size: "sm",
                                                             align: "end",
                                                             color: "#AAAAAA"
@@ -262,7 +253,7 @@ exports.webhook = functions.https.onRequest((request, response) => {
                                                 },
                                                 {
                                                     type: "text",
-                                                    text: "Sauce, Onions, Pickles, Lettuce & Cheese",
+                                                    text: accessoryofPet.description,
                                                     size: "xxs",
                                                     color: "#AAAAAA",
                                                     wrap: true
@@ -282,7 +273,7 @@ exports.webhook = functions.https.onRequest((request, response) => {
                                                     action: {
                                                     type: "message",
                                                     label: "Add to Cart",
-                                                    text: "Add to Cart"
+                                                    text: `เพิ่มสินค้า ${accessoryofPet.name} ลงตะกร้าแล้ว`
                                                     },
                                                     color: "#905C44",
                                                     style: "primary"
@@ -303,6 +294,7 @@ exports.webhook = functions.https.onRequest((request, response) => {
                               console.log('number of listofAccessory: ',listofAccessory.length);
                               console.log('count is',count);
                               listcount = collections.length - count;
+                              console.log("listcount  = " ,listcount);
                               if(listcount === listofAccessory.length){
                                 listofAccessory.push(
                                     {
@@ -367,6 +359,125 @@ exports.webhook = functions.https.onRequest((request, response) => {
 
         //จบการ query ทั้งหมด
         }
+        else if (intent.displayName === 'accessoryList - add'){
+            listofCart = [];
+            var amount = 1;
+            var userID = body.originalDetectIntentRequest.payload.data.source.userId;
+            // console.log("The params is :",params.Productid);
+            console.log("The params.Productid is :",params.Productid);
+            console.log("The user ID is:",userID);
+
+            var usersRef = db.collection('carts').doc(userID);
+
+            usersRef.get()
+            .then((docSnapshot) => {
+                if (docSnapshot.exists) {
+                    console.log("User exist!!");
+                    //check the product exist?
+                    usersRef.getCollections().then(collections => {
+                        collections.forEach(collection => {
+                            collection.doc(params.Productid).get()
+                                .then(doc => {
+                                    if (!doc.exists) {
+                                        console.log('No product in cart');
+                                        amount = 1;
+                                        //add product to cart
+                                        usersRef.collection('cart').doc(params.Productid).set({
+                                            id: params.Productid,
+                                            amount: amount,
+                                        });
+                                    } else {
+                                        console.log('Found subcollection with id:', collection.id);
+                                        console.log('Item',doc.data());
+                                        var updateAmount = doc.data().amount + 1;
+                                        //update the amount of product
+                                        usersRef.collection('cart').doc(params.Productid).update({
+                                            amount: updateAmount
+                                        })
+                                    }
+                                    return;
+                                }).catch(err => {
+                                    console.log('Error getting document', err);
+                                });
+                                return;
+                        });
+                    return;
+                    }).catch(err => {
+                            console.log('Error getting document', err);
+                    });
+                    console.log('amount is: ',amount);
+
+
+                } else {
+                //usersRef.set({...})
+                console.log("User does not exist");
+                db.collection("carts").doc(userID).collection('cart').doc(params.Productid).set({
+                    id: params.Productid,
+                    amount: amount,
+                });
+                }
+                return;
+            }).catch(err => {
+                console.log('Error getting document', err);
+             });
+
+             response.send({
+                "fulfillmentText": `เพิ่มสินค้าลงตะกร้าเรียบร้อย`
+              });
+            //amount
+            // var sfRef = db.collection('carts').doc(userID);
+
+            // var reffUser = db.collection("carts").doc('U655928eaa6f29bea3d9597a05d9c0c0f');
+            // reffUser.get()
+            //     .then(doc => {
+            //         if (!doc.exists) {
+            //         console.log('No such document!');
+            //         } else {
+            //         console.log('Document data:', doc.data());
+                    // var amountref = doc.data()
+                    // console.log('The amount is:',doc.data().collection('cart'))
+                    // reff.getCollections()
+                    //     .then(collections => {
+                    //         collections.forEach(collection => {
+
+                    //             // In ForEach loop
+                    //             // retrieve ข้อมูลของสุนัขแต่ละตัว
+                    //             collection.doc("profile").get()
+                    //                 .then(doc => {
+                    //                     if (!doc.exists) {
+                    //                         console.log('ไม่มีสุนัขสักตัวในสายพันธุ์นี้เลย');
+                    //                     } else {
+                                            
+                    //                         var dataofPet = doc.data();
+                                        
+                    // }
+            //         return;
+            // })
+            // .catch(err => {
+            //     console.log('Error getting document', err);
+            // });
+            // var reffAmount = db.collection("carts").doc(userID).collection('cart').doc(params.Productid);
+            // reffAmount.get().then(doc => {
+            //     if (!doc.exists) { 
+            //         amount = 0 ;
+            //     }else {
+            //         console.log("inIF The amount is",doc.amount);
+            //         amount = doc.amount;
+            //     }
+            //     return;
+            // })
+            // .catch(err => {
+            //     console.log('Error getting document', err);
+            // });
+            
+            // console.log('The amount is',amount);
+            // db.collection("carts").doc(userID).collection('cart').doc(params.Productid).set({
+            //     id: params.Productid,
+            //     amount: amount,
+            //   });
+
+
+          }
 
 });
 
