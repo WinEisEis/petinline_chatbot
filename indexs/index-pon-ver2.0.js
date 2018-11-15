@@ -273,7 +273,7 @@ exports.webhook = functions.https.onRequest((request, response) => {
                                                     action: {
                                                     type: "message",
                                                     label: "Add to Cart",
-                                                    text: `เพิ่มสินค้า ${accessoryofPet.name} ลงตะกร้าแล้ว`
+                                                    text: `เลือกสินค้า ${accessoryofPet.id} ( ${params.Accessorytypes} )`
                                                     },
                                                     color: "#905C44",
                                                     style: "primary"
@@ -363,10 +363,42 @@ exports.webhook = functions.https.onRequest((request, response) => {
             listofCart = [];
             var amount = 1;
             var userID = body.originalDetectIntentRequest.payload.data.source.userId;
+            var price;
             // console.log("The params is :",params.Productid);
             console.log("The params.Productid is :",params.Productid);
+            console.log("The params.Accessorytypes is :",params.Accessorytypes);
             console.log("The user ID is:",userID);
 
+            //get product price
+            //ไม่ควร query ในส่วนการหาค่าเงิน
+            var getPrice = db.collection('accessory').doc(params.Accessorytypes);
+            getPrice.getCollections().then(collections => {
+            collections.forEach(collection => {
+                // console.log('Found subcollection with id:', collection.id);
+                collection.doc("info").get()
+                .then(doc => {
+                    if (!doc.exists) {
+                        console.log('ไม่มี accessory ที่้ต้องการ');
+                    } else {
+                        console.log('elelel',params.Productid,doc.data().id);
+                        if(doc.data().id === params.Productid){
+                            price = doc.data().price;
+                            // console.log('match');
+                        }
+                    }
+                    return;
+                }).catch(err => {
+                    console.log('Error getting document', err);
+                });
+                return;
+                });
+                return;
+            }).catch(err => {
+                console.log('Error getting document', err);
+            });
+            console.log("The price is:",price);
+
+            //Add product to user cart
             var usersRef = db.collection('carts').doc(userID);
 
             usersRef.get()
@@ -385,6 +417,7 @@ exports.webhook = functions.https.onRequest((request, response) => {
                                         usersRef.collection('cart').doc(params.Productid).set({
                                             id: params.Productid,
                                             amount: amount,
+                                            price: price
                                         });
                                     } else {
                                         console.log('Found subcollection with id:', collection.id);
@@ -414,6 +447,12 @@ exports.webhook = functions.https.onRequest((request, response) => {
                 db.collection("carts").doc(userID).collection('cart').doc(params.Productid).set({
                     id: params.Productid,
                     amount: amount,
+                    price: price
+                });
+                //add field
+                db.collection('cities').doc(userID).set({
+                // ...
+                    name: "user"
                 });
                 }
                 return;
@@ -424,60 +463,178 @@ exports.webhook = functions.https.onRequest((request, response) => {
              response.send({
                 "fulfillmentText": `เพิ่มสินค้าลงตะกร้าเรียบร้อย`
               });
-            //amount
-            // var sfRef = db.collection('carts').doc(userID);
-
-            // var reffUser = db.collection("carts").doc('U655928eaa6f29bea3d9597a05d9c0c0f');
-            // reffUser.get()
-            //     .then(doc => {
-            //         if (!doc.exists) {
-            //         console.log('No such document!');
-            //         } else {
-            //         console.log('Document data:', doc.data());
-                    // var amountref = doc.data()
-                    // console.log('The amount is:',doc.data().collection('cart'))
-                    // reff.getCollections()
-                    //     .then(collections => {
-                    //         collections.forEach(collection => {
-
-                    //             // In ForEach loop
-                    //             // retrieve ข้อมูลของสุนัขแต่ละตัว
-                    //             collection.doc("profile").get()
-                    //                 .then(doc => {
-                    //                     if (!doc.exists) {
-                    //                         console.log('ไม่มีสุนัขสักตัวในสายพันธุ์นี้เลย');
-                    //                     } else {
-                                            
-                    //                         var dataofPet = doc.data();
-                                        
-                    // }
-            //         return;
-            // })
-            // .catch(err => {
-            //     console.log('Error getting document', err);
-            // });
-            // var reffAmount = db.collection("carts").doc(userID).collection('cart').doc(params.Productid);
-            // reffAmount.get().then(doc => {
-            //     if (!doc.exists) { 
-            //         amount = 0 ;
-            //     }else {
-            //         console.log("inIF The amount is",doc.amount);
-            //         amount = doc.amount;
-            //     }
-            //     return;
-            // })
-            // .catch(err => {
-            //     console.log('Error getting document', err);
-            // });
-            
-            // console.log('The amount is',amount);
-            // db.collection("carts").doc(userID).collection('cart').doc(params.Productid).set({
-            //     id: params.Productid,
-            //     amount: amount,
-            //   });
-
-
+            //end
           }
+        else if(intent.displayName === 'cart'){
+            var list = [];
+            var responseSum = '';
+            var userID_cart = body.originalDetectIntentRequest.payload.data.source.userId;
+            var totalPrice = 1;
+            var cartList = [];
+            var cartCheck = db.collection('carts').doc(userID_cart).collection('cart');
+            cartCheck.get()
+              .then(snapshot => {
+                snapshot.forEach(doc => {
+                  var data = doc.data();
+                  console.log(data);
+                  list.push({product: doc.id, amount: data.amount, price: data.price});
+                  var sumPrice = data.price * data.amount;
+                  totalPrice += sumPrice;
+                  cartList.push(
+                    {
+                        type: "bubble",
+                        hero: {
+                            type: "image",
+                            url: "https://www.picz.in.th/images/2018/11/05/3T2umu.jpg",
+                            size: "full",
+                            aspectRatio: "20:13",
+                            aspectMode: "fit",
+                            action: {
+                            type: "uri",
+                            label: "Line",
+                            uri: "https://linecorp.com/"
+                            }
+                        },
+                        body: {
+                            type: "box",
+                            layout: "vertical",
+                            contents: [
+                            {
+                                type: "text",
+                                text: `${doc.id}`,
+                                size: "xl",
+                                weight: "bold"
+                            },
+                            {
+                                type: "box",
+                                layout: "vertical",
+                                spacing: "sm",
+                                margin: "lg",
+                                contents: [
+                                {
+                                    type: "box",
+                                    layout: "baseline",
+                                    spacing: "sm",
+                                    contents: [
+                                    {
+                                        type: "text",
+                                        text: "Detail",
+                                        flex: 1,
+                                        size: "sm",
+                                        color: "#AAAAAA"
+                                    },
+                                    {
+                                        type: "text",
+                                        text: "Canine Cuisine Grilled Steak & Eggs Flavor in Meaty Juices is formulated to meet",
+                                        flex: 5,
+                                        size: "sm",
+                                        color: "#666666",
+                                        wrap: true
+                                    }
+                                    ]
+                                },
+                                {
+                                    type: "box",
+                                    layout: "baseline",
+                                    spacing: "sm",
+                                    contents: [
+                                    {
+                                        type: "text",
+                                        text: "Size",
+                                        flex: 1,
+                                        size: "sm",
+                                        color: "#AAAAAA"
+                                    },
+                                    {
+                                        type: "text",
+                                        text: "Large ($3.35)",
+                                        flex: 5,
+                                        size: "sm",
+                                        color: "#666666",
+                                        wrap: true
+                                    },
+                                    {
+                                        type: "icon",
+                                        url: "https://scdn.line-apps.com/n/channel_devcenter/img/fx/restaurant_large_32.png"
+                                    }
+                                    ]
+                                }
+                                ]
+                            }
+                            ]
+                        },
+                        footer: {
+                            type: "box",
+                            layout: "vertical",
+                            flex: 0,
+                            spacing: "sm",
+                            contents: [
+                            {
+                                type: "button",
+                                action: {
+                                type: "message",
+                                label: "Add 1 more",
+                                text: "Add 1 more"
+                                },
+                                color: "#1096C1",
+                                height: "sm",
+                                style: "primary"
+                            },
+                            {
+                                type: "button",
+                                action: {
+                                type: "message",
+                                label: "Cancel Order",
+                                text: "Cancel Order"
+                                },
+                                height: "sm",
+                                style: "link"
+                            }
+                            ]
+                        }
+
+                    }
+                    );
+                });
+                console.log(list);
+                console.log(list.length);
+                for (var i = 0; i<list.length; i++) {
+                  responseSum += `${list[i].product} ${list[i].amount} ลูก`
+                  if (i !== list.length-1) {
+                    responseSum += "\n";
+                  }
+                }
+                console.log(responseSum);
+                response.send({
+                    "fulfillmentMessages": [
+                        {
+                            "text": {
+                              "text": [
+                                `${responseSum}${totalPrice}`
+       
+                              ]
+                            }
+                          },
+                        {
+                          "payload": {
+                            "line": {
+                               "type": "flex",
+                               "altText": "Flex Message",
+                               "contents": {
+                               "type": "carousel",
+                               "contents": cartList
+                                  }
+                                }
+                          }
+                        }
+                    ],
+                  });
+                return;
+              })
+              .catch(err => {
+                console.log('Error getting documents', err);
+              });
+        }
 
 });
 
@@ -492,3 +649,126 @@ exports.webhook = functions.https.onRequest((request, response) => {
     // let intentMap = new Map();
     // intentMap.set("dogSearch", specieSearch);
     // agent.handleRequest(intentMap);
+    // {
+    //     "line": {
+    //       "type": "flex",
+    //       "altText": "Flex Message",
+    //       "contents": {
+    //         "type": "carousel",
+    //         "contents": [
+    //             {
+    //                 "type": "bubble",
+    //                 "hero": {
+    //                   "type": "image",
+    //                   "url": "https://www.picz.in.th/images/2018/11/05/3T2umu.jpg",
+    //                   "size": "full",
+    //                   "aspectRatio": "20:13",
+    //                   "aspectMode": "fit",
+    //                   "action": {
+    //                     "type": "uri",
+    //                     "label": "Line",
+    //                     "uri": "https://linecorp.com/"
+    //                   }
+    //                 },
+    //                 "body": {
+    //                   "type": "box",
+    //                   "layout": "vertical",
+    //                   "contents": [
+    //                     {
+    //                       "type": "text",
+    //                       "text": "Cesar Sunrise Food",
+    //                       "size": "xl",
+    //                       "weight": "bold"
+    //                     },
+    //                     {
+    //                       "type": "box",
+    //                       "layout": "vertical",
+    //                       "spacing": "sm",
+    //                       "margin": "lg",
+    //                       "contents": [
+    //                         {
+    //                           "type": "box",
+    //                           "layout": "baseline",
+    //                           "spacing": "sm",
+    //                           "contents": [
+    //                             {
+    //                               "type": "text",
+    //                               "text": "Detail",
+    //                               "flex": 1,
+    //                               "size": "sm",
+    //                               "color": "#AAAAAA"
+    //                             },
+    //                             {
+    //                               "type": "text",
+    //                               "text": "Canine Cuisine Grilled Steak & Eggs Flavor in Meaty Juices is formulated to meet",
+    //                               "flex": 5,
+    //                               "size": "sm",
+    //                               "color": "#666666",
+    //                               "wrap": true
+    //                             }
+    //                           ]
+    //                         },
+    //                         {
+    //                           "type": "box",
+    //                           "layout": "baseline",
+    //                           "spacing": "sm",
+    //                           "contents": [
+    //                             {
+    //                               "type": "text",
+    //                               "text": "Size",
+    //                               "flex": 1,
+    //                               "size": "sm",
+    //                               "color": "#AAAAAA"
+    //                             },
+    //                             {
+    //                               "type": "text",
+    //                               "text": "Large ($3.35)",
+    //                               "flex": 5,
+    //                               "size": "sm",
+    //                               "color": "#666666",
+    //                               "wrap": true
+    //                             },
+    //                             {
+    //                               "type": "icon",
+    //                               "url": "https://scdn.line-apps.com/n/channel_devcenter/img/fx/restaurant_large_32.png"
+    //                             }
+    //                           ]
+    //                         }
+    //                       ]
+    //                     }
+    //                   ]
+    //                 },
+    //                 "footer": {
+    //                   "type": "box",
+    //                   "layout": "vertical",
+    //                   "flex": 0,
+    //                   "spacing": "sm",
+    //                   "contents": [
+    //                     {
+    //                       "type": "button",
+    //                       "action": {
+    //                         "type": "message",
+    //                         "label": "Add 1 more",
+    //                         "text": "Add 1 more"
+    //                       },
+    //                       "color": "#1096C1",
+    //                       "height": "sm",
+    //                       "style": "primary"
+    //                     },
+    //                     {
+    //                       "type": "button",
+    //                       "action": {
+    //                         "type": "message",
+    //                         "label": "Cancel Order",
+    //                         "text": "Cancel Order"
+    //                       },
+    //                       "height": "sm",
+    //                       "style": "link"
+    //                     }
+    //                   ]
+    //                 }
+    //               }
+    //             ]
+    //           }
+    //         }
+    //       }
