@@ -363,7 +363,7 @@ exports.webhook = functions.https.onRequest((request, response) => {
             listofCart = [];
             var amount = 1;
             var userID = body.originalDetectIntentRequest.payload.data.source.userId;
-            var price;
+            var price = 0;
             // console.log("The params is :",params.Productid);
             console.log("The params.Productid is :",params.Productid);
             console.log("The params.Accessorytypes is :",params.Accessorytypes);
@@ -380,9 +380,12 @@ exports.webhook = functions.https.onRequest((request, response) => {
                     if (!doc.exists) {
                         console.log('ไม่มี accessory ที่้ต้องการ');
                     } else {
-                        console.log('elelel',params.Productid,doc.data().id);
+                        // console.log('elelel',params.Productid,doc.data().id);
+                        console.log("1.",params.Productid,'2.',doc.data().id)
                         if(doc.data().id === params.Productid){
+                            console.log("match");
                             price = doc.data().price;
+                            console.log(price);
                             // console.log('match');
                         }
                     }
@@ -392,11 +395,7 @@ exports.webhook = functions.https.onRequest((request, response) => {
                 });
                 return;
                 });
-                return;
-            }).catch(err => {
-                console.log('Error getting document', err);
-            });
-            console.log("The price is:",price);
+                //end of then
 
             //Add product to user cart
             var usersRef = db.collection('carts').doc(userID);
@@ -417,7 +416,8 @@ exports.webhook = functions.https.onRequest((request, response) => {
                                         usersRef.collection('cart').doc(params.Productid).set({
                                             id: params.Productid,
                                             amount: amount,
-                                            price: price
+                                            price: price,
+                                            type: params.Accessorytypes
                                         });
                                     } else {
                                         console.log('Found subcollection with id:', collection.id);
@@ -447,10 +447,11 @@ exports.webhook = functions.https.onRequest((request, response) => {
                 db.collection("carts").doc(userID).collection('cart').doc(params.Productid).set({
                     id: params.Productid,
                     amount: amount,
-                    price: price
+                    price: price,
+                    type: params.Accessorytypes
                 });
                 //add field
-                db.collection('cities').doc(userID).set({
+                db.collection('carts').doc(userID).set({
                 // ...
                     name: "user"
                 });
@@ -459,6 +460,14 @@ exports.webhook = functions.https.onRequest((request, response) => {
             }).catch(err => {
                 console.log('Error getting document', err);
              });
+             //end of then
+
+                return;
+            }).catch(err => {
+                console.log('Error getting document', err);
+            });
+            // console.log("The price is:",price);
+
 
              response.send({
                 "fulfillmentText": `เพิ่มสินค้าลงตะกร้าเรียบร้อย`
@@ -474,12 +483,38 @@ exports.webhook = functions.https.onRequest((request, response) => {
             var cartCheck = db.collection('carts').doc(userID_cart).collection('cart');
             cartCheck.get()
               .then(snapshot => {
-                snapshot.forEach(doc => {
+                if (!snapshot.exists) {
+                    response.send({
+                        "fulfillmentMessages": [
+                            {
+                                "text": {
+                                  "text": [
+                                    `ไม่มีของในตะกร้า`
+           
+                                  ]
+                                }
+                              }
+                        ],
+                      });
+                }
+                else{
+                  snapshot.forEach(doc => {
                   var data = doc.data();
                   console.log(data);
                   list.push({product: doc.id, amount: data.amount, price: data.price});
                   var sumPrice = data.price * data.amount;
                   totalPrice += sumPrice;
+                  //need to get information of each product
+                //   var findAcc = db.collection('accessory').doc(data.type).getCollections().then(collections => {
+                //     collections.forEach(collection => {
+                //         // console.log('Found subcollection with id:', collection.id);
+                //         collection.doc("info").get()
+                //         .then(assdoc => {
+                //             if(assdoc.id === ){}
+                //         })
+                //     })
+                //    })
+                   //push data to show
                   cartList.push(
                     {
                         type: "bubble",
@@ -596,6 +631,7 @@ exports.webhook = functions.https.onRequest((request, response) => {
                     }
                     );
                 });
+            }
                 console.log(list);
                 console.log(list.length);
                 for (var i = 0; i<list.length; i++) {
@@ -610,7 +646,7 @@ exports.webhook = functions.https.onRequest((request, response) => {
                         {
                             "text": {
                               "text": [
-                                `${responseSum}${totalPrice}`
+                                `${responseSum}\nราคารวม: ${totalPrice}`
        
                               ]
                             }
