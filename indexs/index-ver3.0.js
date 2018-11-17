@@ -132,9 +132,10 @@ exports.webhook = functions.https.onRequest((request, response) => {
           var docQuery = doc.data();
           listofPet.push(
             {
-                thumbnailImageUrl: "https://firebasestorage.googleapis.com/v0/b/petinline-64d57.appspot.com/o/labrador.jpg?alt=media&token=d178eddf-5ded-4619-848c-519bb40362e4",
+                
+                thumbnailImageUrl: docQuery.image,
                 title: doc.id,
-                text: "docQuery.description",
+                text: docQuery.description,
                 actions: [
                     {
                         type: "message",
@@ -428,10 +429,10 @@ exports.webhook = functions.https.onRequest((request, response) => {
                                             amount: amount,
                                             price: price,
                                             type: params.Accessorytypes,
-                                            description = description,
-                                            image = image,
-                                            weight = weight,
-                                            name = name
+                                            description: description,
+                                            image: image,
+                                            weight: weight,
+                                            name: name
                                         });
                                     } else {
                                         console.log('Found subcollection with id:', collection.id);
@@ -463,22 +464,25 @@ exports.webhook = functions.https.onRequest((request, response) => {
                     amount: amount,
                     price: price,
                     type: params.Accessorytypes,
-                    id: params.Productid,
-                    description = description,
-                    image = image,
-                    weight = weight,
-                    name = name
+                    description: description,
+                    image: image,
+                    weight: weight,
+                    name: name
                 });
                 //add field
-                db.collection('carts').doc(userID).set({
-                // ...
-                    name: "user"
-                });
+                // db.collection('carts').doc(userID).set({
+                // // ...
+                //     name: "user"
+                // });
                 }
+                response.send({
+                    "fulfillmentText": `เพิ่มสินค้าลงตะกร้าเรียบร้อย`
+                  });
                 return;
             }).catch(err => {
                 console.log('Error getting document', err);
              });
+
              //end of then
 
                 return;
@@ -487,10 +491,6 @@ exports.webhook = functions.https.onRequest((request, response) => {
             });
             // console.log("The price is:",price);
 
-
-             response.send({
-                "fulfillmentText": `เพิ่มสินค้าลงตะกร้าเรียบร้อย`
-              });
             //end
           }
         else if(intent.displayName === 'cart'){
@@ -499,158 +499,154 @@ exports.webhook = functions.https.onRequest((request, response) => {
             var userID_cart = body.originalDetectIntentRequest.payload.data.source.userId;
             var totalPrice = 1;
             var cartList = [];
+            console.log("In cart intent");
             var cartCheck = db.collection('carts').doc(userID_cart).collection('cart');
             cartCheck.get()
               .then(snapshot => {
-                if (!snapshot.exists) {
-                    response.send({
+                  snapshot.forEach(doc => {
+                      if(!doc.exists){
+                          console.log("To product");
+                        response.send({
                         "fulfillmentMessages": [
                             {
                                 "text": {
-                                  "text": [
+                                    "text": [
                                     `ไม่มีของในตะกร้า`
-           
-                                  ]
+            
+                                    ]
                                 }
-                              }
+                                }
                         ],
-                      });
-                }
-                else{
-                  snapshot.forEach(doc => {
-                  var data = doc.data();
-                  console.log(data);
-                  list.push({product: doc.id, amount: data.amount, price: data.price});
-                  var sumPrice = data.price * data.amount;
-                  totalPrice += sumPrice;
-                  //need to get information of each product
-                //   var findAcc = db.collection('accessory').doc(data.type).getCollections().then(collections => {
-                //     collections.forEach(collection => {
-                //         // console.log('Found subcollection with id:', collection.id);
-                //         collection.doc("info").get()
-                //         .then(assdoc => {
-                //             if(assdoc.id === ){}
-                //         })
-                //     })
-                //    })
-                   //push data to show
-                  cartList.push(
-                    {
-                        type: "bubble",
-                        hero: {
-                            type: "image",
-                            url: "https://www.picz.in.th/images/2018/11/05/3T2umu.jpg",
-                            size: "full",
-                            aspectRatio: "20:13",
-                            aspectMode: "fit",
-                            action: {
-                            type: "uri",
-                            label: "Line",
-                            uri: "https://linecorp.com/"
-                            }
-                        },
-                        body: {
-                            type: "box",
-                            layout: "vertical",
-                            contents: [
+                        });
+                      }
+                      else{
+                        var data = doc.data();
+                        console.log(data);
+                        list.push({product: doc.id, amount: data.amount, price: data.price});
+                        var sumPrice = data.price * data.amount;
+                        totalPrice += sumPrice;
+
+                        //push data to show
+                        cartList.push(
                             {
-                                type: "text",
-                                text: `${doc.id}`,
-                                size: "xl",
-                                weight: "bold"
-                            },
-                            {
-                                type: "box",
-                                layout: "vertical",
-                                spacing: "sm",
-                                margin: "lg",
-                                contents: [
-                                {
+                                type: "bubble",
+                                hero: {
+                                    type: "image",
+                                    url: `${data.image}`,
+                                    size: "full",
+                                    aspectRatio: "20:13",
+                                    aspectMode: "fit",
+                                    action: {
+                                    type: "uri",
+                                    label: "Line",
+                                    uri: "https://linecorp.com/"
+                                    }
+                                },
+                                body: {
                                     type: "box",
-                                    layout: "baseline",
-                                    spacing: "sm",
+                                    layout: "vertical",
                                     contents: [
                                     {
                                         type: "text",
-                                        text: "Detail",
-                                        flex: 1,
-                                        size: "sm",
-                                        color: "#AAAAAA"
+                                        text: `${data.name}`,
+                                        size: "xl",
+                                        weight: "bold"
                                     },
                                     {
-                                        type: "text",
-                                        text: "Canine Cuisine Grilled Steak & Eggs Flavor in Meaty Juices is formulated to meet",
-                                        flex: 5,
-                                        size: "sm",
-                                        color: "#666666",
-                                        wrap: true
+                                        type: "box",
+                                        layout: "vertical",
+                                        spacing: "sm",
+                                        margin: "lg",
+                                        contents: [
+                                        {
+                                            type: "box",
+                                            layout: "baseline",
+                                            spacing: "sm",
+                                            contents: [
+                                            {
+                                                type: "text",
+                                                text: "Detail",
+                                                flex: 1,
+                                                size: "sm",
+                                                color: "#AAAAAA"
+                                            },
+                                            {
+                                                type: "text",
+                                                text: data.description,
+                                                flex: 5,
+                                                size: "sm",
+                                                color: "#666666",
+                                                wrap: true
+                                            }
+                                            ]
+                                        },
+                                        {
+                                            type: "box",
+                                            layout: "baseline",
+                                            spacing: "sm",
+                                            contents: [
+                                            {
+                                                type: "text",
+                                                text: "Price",
+                                                flex: 1,
+                                                size: "sm",
+                                                color: "#AAAAAA"
+                                            },
+                                            {
+                                                type: "text",
+                                                text: `$${data.price} * ${data.amount}`,
+                                                flex: 5,
+                                                size: "sm",
+                                                color: "#666666",
+                                                wrap: true
+                                            },
+                                            {
+                                                type: "icon",
+                                                url: "https://scdn.line-apps.com/n/channel_devcenter/img/fx/restaurant_large_32.png"
+                                            }
+                                            ]
+                                        }
+                                        ]
                                     }
                                     ]
                                 },
-                                {
+                                footer: {
                                     type: "box",
-                                    layout: "baseline",
+                                    layout: "vertical",
+                                    flex: 0,
                                     spacing: "sm",
                                     contents: [
                                     {
-                                        type: "text",
-                                        text: "Size",
-                                        flex: 1,
-                                        size: "sm",
-                                        color: "#AAAAAA"
+                                        type: "button",
+                                        action: {
+                                        type: "message",
+                                        label: "Add 1 more",
+                                        text: `เพิ่มสินค้า ${data.id}`
+                                        },
+                                        color: "#1096C1",
+                                        height: "sm",
+                                        style: "primary"
                                     },
                                     {
-                                        type: "text",
-                                        text: "Large ($3.35)",
-                                        flex: 5,
-                                        size: "sm",
-                                        color: "#666666",
-                                        wrap: true
-                                    },
-                                    {
-                                        type: "icon",
-                                        url: "https://scdn.line-apps.com/n/channel_devcenter/img/fx/restaurant_large_32.png"
+                                        type: "button",
+                                        action: {
+                                        type: "message",
+                                        label: "Cancel Order",
+                                        text: `ยกเลิกรายการ ${data.id}`
+                                        },
+                                        height: "sm",
+                                        style: "link"
                                     }
                                     ]
                                 }
-                                ]
-                            }
-                            ]
-                        },
-                        footer: {
-                            type: "box",
-                            layout: "vertical",
-                            flex: 0,
-                            spacing: "sm",
-                            contents: [
-                            {
-                                type: "button",
-                                action: {
-                                type: "message",
-                                label: "Add 1 more",
-                                text: "Add 1 more"
-                                },
-                                color: "#1096C1",
-                                height: "sm",
-                                style: "primary"
-                            },
-                            {
-                                type: "button",
-                                action: {
-                                type: "message",
-                                label: "Cancel Order",
-                                text: "Cancel Order"
-                                },
-                                height: "sm",
-                                style: "link"
-                            }
-                            ]
-                        }
 
-                    }
-                    );
-                });
-            }
+                            }
+                            );
+                        }
+                        });
+                      
+                  
+            
                 console.log(list);
                 console.log(list.length);
                 for (var i = 0; i<list.length; i++) {
@@ -659,37 +655,136 @@ exports.webhook = functions.https.onRequest((request, response) => {
                     responseSum += "\n";
                   }
                 }
-                console.log(responseSum);
-                response.send({
-                    "fulfillmentMessages": [
-                        {
-                            "text": {
-                              "text": [
-                                `${responseSum}\nราคารวม: ${totalPrice}`
-       
-                              ]
-                            }
-                          },
-                        {
-                          "payload": {
-                            "line": {
-                               "type": "flex",
-                               "altText": "Flex Message",
-                               "contents": {
-                               "type": "carousel",
-                               "contents": cartList
-                                  }
+                if(totalPrice === 1){
+                    response.send({
+                        "fulfillmentMessages": [
+                            {
+                                "text": {
+                                    "text": [
+                                    `ไม่มีของในตะกร้า`
+            
+                                    ]
                                 }
-                          }
-                        }
-                    ],
-                  });
+                                }
+                        ],
+                        });
+                }else{
+                    console.log(responseSum);
+                    response.send({
+                        "fulfillmentMessages": [
+                            {
+                                "text": {
+                                "text": [
+                                    `${responseSum}\nราคารวม: ${totalPrice}`
+        
+                                ]
+                                }
+                            },
+                            {
+                            "payload": {
+                                "line": {
+                                "type": "flex",
+                                "altText": "Flex Message",
+                                "contents": {
+                                "type": "carousel",
+                                "contents": cartList
+                                    }
+                                    }
+                            }
+                            }
+                        ],
+                    });
+                }
+          
                 return;
               })
               .catch(err => {
                 console.log('Error getting documents', err);
               });
         }
+        else if (intent.displayName === "cart - delete") {
+            var userID_del = body.originalDetectIntentRequest.payload.data.source.userId;
+            console.log(params.Productid);
+            var countUser = 0;
+            var delReff = db.collection('carts').doc(userID_del).collection('cart');
+            var deleteProduct = delReff.doc(params.Productid).delete();
+
+            var checkUser = db.collection('carts').doc(userID_del);
+            checkUser.getCollections().then(collections => {
+                collections.forEach(collection => {
+                    countUser ++;
+                    console.log("There is a doc",countUser);
+                });
+                return;
+            }).catch(err => {
+              console.log('Error getting documents', err);
+            });
+            if(countUser === 0){
+                var delUser = db.collection('carts').doc('userID_del').delete();
+            }
+            response.send({
+                "fulfillmentText":
+                  `ลบ ${params.Productid} จากตะกร้าแล้ว`
+            });
+
+          }
+          else if (intent.displayName === "cart - add") {
+            listofCart = [];
+            var amount2 = 1;
+            var userID_update = body.originalDetectIntentRequest.payload.data.source.userId;
+
+            // console.log("The params is :",params.Productid);
+            console.log("The params.Productid is :",params.Productid);
+            console.log("The user ID is:",userID_update);
+
+            //Add product to user cart
+            var updateRef = db.collection('carts').doc(userID_update);
+
+            updateRef.get()
+            .then((docSnapshot) => {
+
+                console.log("User exist!!");
+                //check the product exist?
+                updateRef.getCollections().then(collections => {
+                    collections.forEach(collection => {
+                        collection.doc(params.Productid).get()
+                            .then(doc => {
+
+                            console.log('Found subcollection with id:', collection.id);
+                            console.log('Item',doc.data());
+                            var updateAmount2 = doc.data().amount + 1;
+                            //update the amount of product
+                            updateRef.collection('cart').doc(params.Productid).update({
+                                amount: updateAmount2
+                            })
+                            console.log("The update amount is ",updateAmount2);
+                            response.send({
+                                "fulfillmentText": `เพิ่มลงตะกร้าแล้ว`
+                            });
+                            return;
+                                
+
+                            }).catch(err => {
+                                console.log('Error getting document', err);
+                            });
+                            return;
+                    });
+                return;
+                }).catch(err => {
+                        console.log('Error getting document', err);
+                });
+
+                return;
+            }).catch(err => {
+                console.log('Error getting document', err);
+             });
+             //end of then
+
+            // console.log("The price is:",price);
+
+            //end
+
+          }
 
 });
 
@@ -704,126 +799,3 @@ exports.webhook = functions.https.onRequest((request, response) => {
     // let intentMap = new Map();
     // intentMap.set("dogSearch", specieSearch);
     // agent.handleRequest(intentMap);
-    // {
-    //     "line": {
-    //       "type": "flex",
-    //       "altText": "Flex Message",
-    //       "contents": {
-    //         "type": "carousel",
-    //         "contents": [
-    //             {
-    //                 "type": "bubble",
-    //                 "hero": {
-    //                   "type": "image",
-    //                   "url": "https://www.picz.in.th/images/2018/11/05/3T2umu.jpg",
-    //                   "size": "full",
-    //                   "aspectRatio": "20:13",
-    //                   "aspectMode": "fit",
-    //                   "action": {
-    //                     "type": "uri",
-    //                     "label": "Line",
-    //                     "uri": "https://linecorp.com/"
-    //                   }
-    //                 },
-    //                 "body": {
-    //                   "type": "box",
-    //                   "layout": "vertical",
-    //                   "contents": [
-    //                     {
-    //                       "type": "text",
-    //                       "text": "Cesar Sunrise Food",
-    //                       "size": "xl",
-    //                       "weight": "bold"
-    //                     },
-    //                     {
-    //                       "type": "box",
-    //                       "layout": "vertical",
-    //                       "spacing": "sm",
-    //                       "margin": "lg",
-    //                       "contents": [
-    //                         {
-    //                           "type": "box",
-    //                           "layout": "baseline",
-    //                           "spacing": "sm",
-    //                           "contents": [
-    //                             {
-    //                               "type": "text",
-    //                               "text": "Detail",
-    //                               "flex": 1,
-    //                               "size": "sm",
-    //                               "color": "#AAAAAA"
-    //                             },
-    //                             {
-    //                               "type": "text",
-    //                               "text": "Canine Cuisine Grilled Steak & Eggs Flavor in Meaty Juices is formulated to meet",
-    //                               "flex": 5,
-    //                               "size": "sm",
-    //                               "color": "#666666",
-    //                               "wrap": true
-    //                             }
-    //                           ]
-    //                         },
-    //                         {
-    //                           "type": "box",
-    //                           "layout": "baseline",
-    //                           "spacing": "sm",
-    //                           "contents": [
-    //                             {
-    //                               "type": "text",
-    //                               "text": "Size",
-    //                               "flex": 1,
-    //                               "size": "sm",
-    //                               "color": "#AAAAAA"
-    //                             },
-    //                             {
-    //                               "type": "text",
-    //                               "text": "Large ($3.35)",
-    //                               "flex": 5,
-    //                               "size": "sm",
-    //                               "color": "#666666",
-    //                               "wrap": true
-    //                             },
-    //                             {
-    //                               "type": "icon",
-    //                               "url": "https://scdn.line-apps.com/n/channel_devcenter/img/fx/restaurant_large_32.png"
-    //                             }
-    //                           ]
-    //                         }
-    //                       ]
-    //                     }
-    //                   ]
-    //                 },
-    //                 "footer": {
-    //                   "type": "box",
-    //                   "layout": "vertical",
-    //                   "flex": 0,
-    //                   "spacing": "sm",
-    //                   "contents": [
-    //                     {
-    //                       "type": "button",
-    //                       "action": {
-    //                         "type": "message",
-    //                         "label": "Add 1 more",
-    //                         "text": "Add 1 more"
-    //                       },
-    //                       "color": "#1096C1",
-    //                       "height": "sm",
-    //                       "style": "primary"
-    //                     },
-    //                     {
-    //                       "type": "button",
-    //                       "action": {
-    //                         "type": "message",
-    //                         "label": "Cancel Order",
-    //                         "text": "Cancel Order"
-    //                       },
-    //                       "height": "sm",
-    //                       "style": "link"
-    //                     }
-    //                   ]
-    //                 }
-    //               }
-    //             ]
-    //           }
-    //         }
-    //       }
