@@ -40,6 +40,7 @@ exports.webhook = functions.https.onRequest((request, response) => {
       console.log("params's name is", params.Dogspecies);
          // สร้าง list เปล่า เพื่อใช้ในการแสดง carousel ของสิ่งที่ query มา
         list = [];
+        var flagcount = 0;
         
         // ชื่อใน collection จะต้องมีการเปลี่ยนในภายหลัง ไม่ fix ให้เป็น dog เลย
         
@@ -61,94 +62,175 @@ exports.webhook = functions.https.onRequest((request, response) => {
                                 var dataofPet = doc.data();
                                 console.log('ข้อมูลของสุนัขตัวที่pon', collection.id, 'มีดังนี้:', doc.data());
                                 console.log('dog type :',dataofPet.dogtype);
-                                list.push(
-                                  {
-
-                                    type: "bubble",
-                                    header: {
-                                    type: "box",
-                                    layout: "horizontal",
-                                    contents: [
+                                if(dataofPet.flag === 0){
+                                    list.push(
                                         {
-                                        type: "text",
-                                        text: `🐶${dataofPet.name}`,
-                                        size: "sm",
-                                        weight: "bold",
-                                        color: "#AAAAAA"
-                                        }
-                                    ]
-                                    },
-                                    hero: {
-                                    type: "image",
-                                    url: dataofPet.image,
-                                    size: "full",
-                                    aspectRatio: "20:13",
-                                    aspectMode: "cover"
-                                    },
-                                    body: {
-                                    type: "box",
-                                    layout: "horizontal",
-                                    spacing: "md",
-                                    contents: [
-                                        {
-                                        type: "box",
-                                        layout: "vertical",
-                                        flex: 1,
-                                        contents: [
-                                            {
+                                          type: "bubble",
+                                          hero: {
                                             type: "image",
-                                            url: dataofPet.image,
-                                            gravity: "bottom",
-                                            size: "sm",
-                                            aspectRatio: "4:3",
+                                            url: dataofPet.image1,
+                                            size: "full",
+                                            aspectRatio: "20:13",
                                             aspectMode: "cover"
-                                            },
-                                            {
-                                            type: "image",
-                                            url: dataofPet.image,
-                                            margin: "md",
-                                            size: "sm",
-                                            aspectRatio: "4:3",
-                                            aspectMode: "cover"
-                                            }
-                                        ]
-                                        },
-                                        {
-                                        type: "box",
-                                        layout: "vertical",
-                                        flex: 2,
-                                        contents: [
-                                            {
-                                            type: "text",
-                                            text: dataofPet.info,
-                                            size: "xs",
-                                            wrap: true
-                                            }
-                                        ]
+                                          },
+                                          body: {
+                                            type: "box",
+                                            layout: "vertical",
+                                            spacing: "sm",
+                                            contents: [
+                                              {
+                                                type: "text",
+                                                text: `${dataofPet.name} story`,
+                                                size: "xl",
+                                                align: "center",
+                                                weight: "bold",
+                                                wrap: true
+                                              },
+                                              {
+                                                type: "box",
+                                                layout: "baseline",
+                                                contents: [
+                                                  {
+                                                    type: "text",
+                                                    text: "$FREE",
+                                                    flex: 0,
+                                                    size: "lg",
+                                                    weight: "bold",
+                                                    wrap: true
+                                                  }
+                                                ]
+                                              },
+                                              {
+                                                type: "box",
+                                                layout: "vertical",
+                                                contents: [
+                                                  {
+                                                    type: "text",
+                                                    text: dataofPet.info,
+                                                    color: "#000000",
+                                                    wrap: true
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          },
+                                          footer: {
+                                            type: "box",
+                                            layout: "vertical",
+                                            spacing: "sm",
+                                            contents: [
+                                              {
+                                                type: "button",
+                                                action: {
+                                                  type: "message",
+                                                  label: "Adopt",
+                                                  text: `${collection.id}`
+                                              },
+                                                style: "primary"
+                                              },
+                                              {
+                                                type: "button",
+                                                action: {
+                                                  type: "message",
+                                                  label: "More detail",
+                                                  text: `${collection.id}`
+                                              }
+                                              }
+                                            ]
+                                          }
+                                        
+                                          // type: "bubble",
+                                          // header: {
+                                          // type: "box",
+                                          // layout: "horizontal",
+                                          // contents: [
+                                          //     {
+                                          //     type: "text",
+                                          //     text: `🐶${dataofPet.name}`,
+                                          //     size: "sm",
+                                          //     weight: "bold",
+                                          //     color: "#AAAAAA"
+                                          //     }
+                                          // ]
+                                          // },
+                                          // hero: {
+                                          // type: "image",
+                                          // url: dataofPet.image1,
+                                          // size: "full",
+                                          // aspectRatio: "20:13",
+                                          // aspectMode: "cover"
+                                          // },
+                                          // body: {
+                                          // type: "box",
+                                          // layout: "horizontal",
+                                          // spacing: "md",
+                                          // contents: [
+                                          //     {
+                                          //     type: "box",
+                                          //     layout: "vertical",
+                                          //     flex: 1,
+                                          //     contents: [
+                                          //         {
+                                          //         type: "image",
+                                          //         url: dataofPet.image2,
+                                          //         gravity: "bottom",
+                                          //         size: "sm",
+                                          //         aspectRatio: "4:3",
+                                          //         aspectMode: "cover"
+                                          //         },
+                                          //         {
+                                          //         type: "image",
+                                          //         url: dataofPet.image3,
+                                          //         margin: "md",
+                                          //         size: "sm",
+                                          //         aspectRatio: "4:3",
+                                          //         aspectMode: "cover"
+                                          //         }
+                                          //     ]
+                                          //     },
+                                          //     {
+                                          //     type: "box",
+                                          //     layout: "vertical",
+                                          //     flex: 2,
+                                          //     contents: [
+                                          //         {
+                                          //         type: "text",
+                                          //         text: dataofPet.info,
+                                          //         size: "xs",
+                                          //         wrap: true
+                                          //         }
+                                          //     ]
+                                          //     }
+                                          // ]
+                                          // },
+                                          // footer: {
+                                          // type: "box",
+                                          // layout: "horizontal",
+                                          // contents: [
+                                          //     {
+                                          //     type: "button",
+                                          //     action: {
+                                          //         type: "message",
+                                          //         label: "More detail",
+                                          //         text: `${collection.id}`
+                                          //     }
+                                          //     }
+                                          // ]
+                                          // }
+      
+      
+      
                                         }
-                                    ]
-                                    },
-                                    footer: {
-                                    type: "box",
-                                    layout: "horizontal",
-                                    contents: [
-                                        {
-                                        type: "button",
-                                        action: {
-                                            type: "message",
-                                            label: "More detail",
-                                            text: `${collection.id}`
-                                        }
-                                        }
-                                    ]
-                                    }
-
-
-                                  }
-                              );
+                                    );
+                                }
+                                else{
+                                    //in case the flag is not 0
+                                    flagcount ++;
+                                }
+                                
                               console.log('number of array: ',collections.length);
                               console.log('number of list: ',list.length);
-                              if(collections.length === list.length){
+                              if(collections.length === list.length + flagcount){
                                 console.log("List out of then:",list);
                                 response.send({
                                     "fulfillmentMessages": [
@@ -186,6 +268,7 @@ exports.webhook = functions.https.onRequest((request, response) => {
 
     }
 
+    //show dog information and a button to confirm yes or no
     else if (intent.displayName === 'dogSearch - detail'){
         listofPet = [];
         console.log("The dogSearch - detail params is :",params.Petid);
@@ -201,30 +284,9 @@ exports.webhook = functions.https.onRequest((request, response) => {
                     {
                         "payload": {
                             "line": {
-                                "type": "flex",
-                                "altText": "Flex Message",
-                                "contents": {
-                                  "type": "bubble",
-                                  "direction": "ltr",
-                                  "header": {
-                                    "type": "box",
-                                    "layout": "vertical",
-                                    "contents": [
-                                      {
-                                        "type": "text",
-                                        "text": `${data.name}`,
-                                        "align": "center"
-                                      }
-                                    ]
-                                  },
-                                  "hero": {
-                                    "type": "image",
-                                    "url": `${data.image}`,
-                                    "size": "full",
-                                    "aspectRatio": "1.51:1",
-                                    "aspectMode": "fit"
-                                  }
-                                }
+                                "type": "image",
+                                "originalContentUrl": `${data.image2}`,
+                                "previewImageUrl": `${data.image2}`
                               
                             }
                         }
@@ -233,6 +295,72 @@ exports.webhook = functions.https.onRequest((request, response) => {
                         "text": {
                         "text": [
                             `🐕: ${data.name}\n ✔️(Detail): ${data.info}`
+                        ]
+                        }
+                    },
+                    {
+                        "payload": {
+                            "line": {
+                                "type": "template",
+                                "altText": "this is a confirm template",
+                                "template": {
+                                    "type": "confirm",
+                                    "text": "Are you sure?",
+                                    "actions": [
+                                        {
+                                            "type": "message",
+                                            "label": "Yes",
+                                            "text": "yes"
+                                        },
+                                        {
+                                            "type": "message",
+                                            "label": "No",
+                                            "text": "no"
+                                        }
+                                    ]
+                                }
+                              
+                            }
+                        }
+                    }
+                    // {
+                    //     "text": {
+                    //     "text": [
+                    //         `🙋⚠If you would like to adopt this Rockstar, please contact line ID:example or visit www.petinline.in.th for an application!\n\n❌Puppies are hard work. If you are not ready for a 'new baby' please adopt an adult or senior who need you! In addition, we cannot guarantee the breed, size, and age of a puppy.`
+                    //     ]
+                    //     }
+                    // }
+                ],
+            });
+            return;
+          }).catch(err => {
+          console.log('Error in petType getting documents', err);
+        });
+      return;
+      }
+
+      else if (intent.displayName === 'dogSearch - detail - yes'){
+        console.log("The dogSearch - detail -yes params is :",params.Petid);
+        var detailparams_yes = params.Petid;
+        newdetailparams_yes = detailparams_yes.substring(0, detailparams_yes.length - 1);
+        console.log("The new string is yes: ",newdetailparams_yes);
+        
+        var updateNested = db.collection('dogs').doc(newdetailparams_yes).collection(detailparams_yes).doc('profile').update({
+            flag: 1
+          });
+
+        var dRef_yes = db.collection('dogs').doc(newdetailparams_yes).collection(detailparams_yes).doc('profile');
+        dRef_yes.get().then(doc => {
+            var data = doc.data();
+            console.log("data is:",data);
+            response.send({
+                "fulfillmentMessages": [
+                    {
+                        "text": {
+                        "text": [
+                            `🐕: ${data.name}\n How to contact and some policy here
+                            \n ✔️จองแล้วนาจาาา
+                            \n ✔️(Line ID): XXXX`
                         ]
                         }
                     },
