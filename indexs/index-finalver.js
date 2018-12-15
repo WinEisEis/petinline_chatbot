@@ -231,6 +231,32 @@ exports.webhook = functions.https.onRequest((request, response) => {
                               console.log('number of array: ',collections.length);
                               console.log('number of list: ',list.length);
                               if(collections.length === list.length + flagcount){
+                                list.push(
+                                    {
+                                        type: "bubble",
+                                        direction: "rtl",
+                                        body: {
+                                            type: "box",
+                                            layout: "vertical",
+                                            spacing: "xs",
+                                            contents: [
+                                            {
+                                                type: "button",
+                                                action: {
+                                                type: "uri",
+                                                label: "See more",
+                                                uri: "line://app/1589898239-YE83yRX2"
+                                                },
+                                                flex: 1,
+                                                gravity: "center"
+                                            }
+                                            ]
+                                        }
+
+                                        
+
+                                    }
+                                );
                                 console.log("List out of then:",list);
                                 response.send({
                                     "fulfillmentMessages": [
@@ -571,7 +597,7 @@ exports.webhook = functions.https.onRequest((request, response) => {
                                                 action: {
                                                 type: "uri",
                                                 label: "See more",
-                                                uri: "https://linecorp.com"
+                                                uri: "line://app/1589898239-YE83yRX2"
                                                 },
                                                 flex: 1,
                                                 gravity: "center"
